@@ -1,0 +1,29 @@
+Start:
+	ldr r1, CB2_LoadMap2
+	mov r4, #0
+	ldr r5, r5r6
+	ldr r6, r5r6
+	ldr r7, r7set
+	push {r0-r7}
+	mov     r2, pc
+    add     r2, #11
+    mov     lr, r2
+	mov r0, #30
+	ldr r1, gSaveDataBufferFake
+	ldr r3, ReadFlashSector
+	bx r3
+	ldr r3, GAMELOADSETUP
+	bx r3
+.align
+gSaveDataBufferFake:
+	.long 0x0203abbc 
+ReadFlashSector:
+	.long 0x0815314d
+GAMELOADSETUP:       @TODO: update location
+	.long 0x0203AD11
+CB2_LoadMap2:
+	.long 0x08085ffd
+r5r6:
+	.long 0x030022B4
+r7set:
+	.long 0x030022C0

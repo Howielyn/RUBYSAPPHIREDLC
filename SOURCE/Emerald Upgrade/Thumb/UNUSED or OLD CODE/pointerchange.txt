@@ -1,0 +1,11 @@
+Start:
+	ldr r0, VBlankIntrPointer
+	ldr r1, gsavedatabuffer
+	str r1, [r0]
+	bx lr
+.align
+VBlankIntrPointer:
+    .long 0x03002720 
+gsavedatabuffer:
+	.long 0x0203abbd
+

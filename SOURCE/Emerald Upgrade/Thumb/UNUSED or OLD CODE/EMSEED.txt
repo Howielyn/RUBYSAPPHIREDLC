@@ -1,0 +1,169 @@
+IsWaiting:                            @to understand code properly, it might be better to start reading at HasSavedYet. IsWaiting, ClearWait, & EqualPreviousSave rely on code from it as they wait for a success state.      
+	push {r0-r7}                      @preserve gp registers
+	mov r2, #255                      @If my vblankintr is running during a save, game will crash. 
+	add r2, #10                       @IsWaiting is checking if a value in sUnused is 0.
+	ldr r1, sUnused                   @if it's not, it increments it by 1 until we reach 265. This is about how long the game takes to save.
+	ldr r0, [r1]                      
+	cmp r0, #0                        @if the value here is 0, we go to the code that checks if we're currently saving. 
+	beq HaveSavedYet
+	add r0, #1                       
+	cmp r0, r2
+	beq ClearWait                     @if the value is 265, we clear sUnused to 0 in ClearWait. This will end the timer. 
+	str r0, [r1]
+	b ExitToVblankIntr                @if the timer is above 0, but under 265, we immediately exit to regular vblankintr function. 
+ClearWait:
+	mov r0, #0                        @this ends waiting timer. 
+	str r0, [r1]
+EqualPreviousSave:                    @when wait timer ends, we have to re-set some values to make the loop work again.
+	ldr r0, sUnusedOverworldCallback  @This is where I store my save counter.
+	ldr r1, [r0]
+	ldr r2, gLastSaveCounter          @if my counter is the same as the games previous counter, I know a save happend and have to update it. 
+	ldr r2, [r2]
+	cmp r1, r2
+	bne HaveSavedYet                  @this should never actually trigger because clearwait always happens after a save finishes. Can remove probably. 
+	ldr r2, gSaveCounter              @I copy current value in gSaveCounter to sUnusedOverworldCallback (where I store my save counter).
+	ldr r2, [r2]
+	str r2, [r0]
+	mov     r4, pc                    @set LR to line 34.
+    add     r4, #11
+    mov     lr, r4
+	movs r0, #30
+	ldr r1, gSaveDataBuffer           @Load my data & code section 30 into 0x02010820. You can't use gSaveDataBuffer while the game is saving. 
+	ldr r3, ReadFlashSector           @forgot to change name of gSaveDataBuffer to gSaveDataBufferFake
+	bx r3
+	ldr r1, gPokemonStoragePtr        @Load Pokemon Storage pointer to begin to restore PC Boxes post-save. 
+	ldr r1, [r1]                      @gPokemonStoragePtr tells me where PC Boxes currently start. 
+	ldr r2, Box12Slot13               @this is where box 12 slot 13 begins. Offset found using https://adrichu00.github.io/WhichBox/.
+	add r1, r2                        @Adds offset to gPokemonStoragePtr
+	ldr r0, gSaveDataBuffer500        @this is 500 bytes into where save sector 30 was loaded. It's where I store the Pokemon so they don't overwrite my code.
+	ldr r2, CopyBoxSlots              @This is how many words the 5 box slots I copy is, and which copy type to use.
+	SWI #11                           @bios memory copy. r0 is source address, r1 is destination, r2 is word amount to copy. 
+HaveSavedYet:                         @Main Loop to check if saving.
+	ldr r0, gObjectEventPlayer        @#110 = 0x6E glitch movement type. 
+	mov r1, #110                      @When I hook the save by checking gSaveCounter, part of saveblock1 is already done, including movement type.  
+	strb r1, [r0]                     @I write the glitch movement type every frame to the players object event so that when we save, it's already done. 
+    ldr r1, sUnusedOverworldCallback  @check if sUnusedOverworldCallback is currently 0.
+	ldr r3, [r1]                        
+	cmp r3, #0                        
+	bne CheckSave                     @if it's not, check if we're saving. 
+	ldr r0, gSaveCounter              @if zero, put value from gSaveCounter in sUnusedOverworldCallback
+	ldr r0, [r0]                      @technically this setup fails if user has saved 0 times.
+	ldr r1, sUnusedOverworldCallback
+	str r0, [r1]
+CheckSave:
+	ldr r0, gSaveCounter              @to check if we're saving, I compare gSaveCounters current value to what it was on game load. 
+	ldr r0, [r0]
+	ldr r1, sUnusedOverworldCallback
+	ldr r1, [r1]
+	cmp r0, r1                      
+	beq ExitToVblankIntr              @if gSaveCounter and sUnusedOverworldCallback are equal, exit to normal vblankintr.
+StoreBox:
+	ldr r0, sUnused                   @if not equal, hijack. 
+	movs r1, #1                       @Once success state is triggered, place 1 into sUnused for IsWaiting to begin its loop of 265 frames. 
+	str r1, [r0]
+	mov     r4, pc                    @Preserve LR to be line 71. 
+    add     r4, #11
+    mov     lr, r4
+	movs r0, #30
+	ldr r1, gSaveDataBuffer           @load value from save sector 30. I do not use actual gSaveDataBuffer. It's 0x02010820 
+	ldr r3, ReadFlashSector           @if you use gSaveDataBuffer while saving, game crashes / fails to save. So must use other address. 
+	bx r3
+	ldr r0, gPokemonStoragePtr        @Find current position of PC Boxes
+	ldr r0, [r0]                      @jump to offset of box 12 slot 13. Found with https://adrichu00.github.io/WhichBox/
+	ldr r1, Box12Slot13               @While entrypoint for 0x6E is statically 02030401, ASLR shifts which box slots this covers.    
+	add r0, r1                        @It can cover slot13 to slot16. So I 0 them out and start my code in box 17, so my code never goes above 02030401.
+	ldr r1, gSaveDataBuffer500        @This will copy box 12 slot 13 - box 12 slot 17 from the PC to 500 bytes into 0x02010820. 
+	ldr r2, CopyBoxSlots              @words & copy type of pokemon
+	SWI #11                           @bios memory copy. r0 is source address, r1 is destination, r2 is word amount to copy. 
+	ldr r0, gPokemonStoragePtr        @similar to above, but instea of a bios memory copy, I do bios memory fill. 
+	ldr r0, [r0]
+	ldr r1, Box12Slot13
+	add r1, r0
+	ldr r0, gUnusedControllerStruct   @a space in ram that's always 0, so use that as word to fill. 
+	ldr r2, FillBoxSlots              @memorycopy/fill is controlled by bit 24 of length value in r2.  
+	SWI #11							  @bios memory fill. r0 is source address of value to fill, r1 is destination, r2 is word amount to fill. 
+	mov     r4, pc                    @preserve LR as line 92
+    add     r4, #11
+    mov     lr, r4
+	movs r0, #30                      @saves Pokemon into sector 30!
+	ldr r1, gSaveDataBuffer 
+	ldr r3, TryWriteSector
+	bx r3
+BadEggCode:
+	ldr r0, gPokemonStoragePtr        @location of pc boxes currently. 
+	ldr r0, [r0]
+	ldr r1, Box17Offset               @jump to offset of box 12 slot 17. Found with https://adrichu00.github.io/WhichBox/
+	add r1, r0                        @this is where I will store the actual code in testegg.txt.
+	ldr r0, BadEggLocation            @this is where in save sector 30 my code for box 17 is stored.
+	ldr r2, CopyBox17                 @amount of words to copy. Coincidentally exactly 1 boxmon in length, otherwise I'd have to delete and store box 18 as well.
+	SWI #11                           @bios memory copy. r0 is source address, r1 is destination, r2 is word amount to copy. 
+ExitToVblankIntr:
+	ldr r0, VBlankIntrLR              @Restore proper LR VblankIntr needs.
+	mov lr, r0
+AreInOW2:
+	ldr r0, gMain_CB2                 @Check if we're in currently in overworld. 
+	ldr r0, [r0]
+	ldr r1, CB2_OverworldBasic
+	cmp r0, r1                        @if we are, exit to vblankintr
+	beq End
+	ldr r1, CB2_HallOfFame            @check if we're in hall of fame. If we are, exit to vblankintr
+	cmp r0, r1
+	beq End
+	ldr r0, gObjectEventPlayer        @if we're not in cb2 overworld, set gObjectEventPlayer movement type to 0x0B (movementtype player)
+	mov r1, #11                       @movementtypecallback only updates on map load. So if we go into a menu, or battle, etc, game would crash. 
+	strb r1, [r0]                     @since our code isn't in box slot 17 yet. By changing it to 0B, game behaves as normal every frame!
+End:
+	pop {r0-r7}
+	ldr r3, VBlankIntr
+	bx r3
+.align
+gSaveCounter:                         @emeralds save counter. Compare to this to see if we have saved. 
+	.long 0x03006200
+VBlankIntr:
+	.long 0x08000739
+VBlankIntrLR:
+	.long 0x0300287C
+sUnusedOverworldCallback:             @where I store my independant save counter. 
+	.long 0x03000e0c	
+ReadFlashSector:
+	.long 0x0815314D
+gSaveDataBuffer:                      @not actual gsavadatabuffer. Never changed name. Pick a random unused spot in ewram instead. 
+	.long 0x02010820 
+gPokemonStoragePtr:                
+	.long 0x03005d94 
+Box17Offset:                          @box 17 location relative to gPokemonStoragePtr. 
+	.long 0x00006BF9 
+gSaveDataBuffer500:                   @where I store players pokemon in save sector 1e. 
+	.long 0x02010D20
+Box12Slot13:                          @box 13 location.
+	.long 0x00006AE4
+CopyBoxSlots:                         @word amount of boxes 13-17.
+	.long 0x04000063
+FillBoxSlots:
+	.long 0x05000063 
+VBlankCallBack:
+	.long 0x03002720 
+sUnused:                              @where I store my timer for IsWaiting
+	.long 0x02022c34 
+gLastSaveCounter: 
+	.long 0x030061f4 
+gUnusedControllerStruct:              @a value that is always 0.
+	.long 0x02022d0c 
+TryWriteSector:
+	.long 0x08152909 
+gObjectEventPlayer:
+	.long 0x02037356
+gMain_CB2:
+	.long 0x30022c4	
+CB2_OverworldBasic:
+	.long 0x08085e5D 
+CB2_HallOfFame:
+	.long 0x08173561 
+CopyBox17:                            @box 17 word count. 
+	.long 0x04000014
+BadEggLocation:                       @where I store code for box 17.
+	.long 0x02010954
+ValueSaveDialogeCallback:
+	.long 0x080A0235
+sSaveDialogeCallback:
+	.long 0x0203761c 

@@ -1,0 +1,76 @@
+TimerStart:
+	push {lr}       @PUSH LR as a way to return to testegg.
+	ldr r0, sUnused @an unused spot in RAM I use as a timer for EMSEED.txt
+	mov r1, #1      @moving 1 into it starts my timer. When the timer finishes I reload pokemon into PC from gSaveDataBuffer.
+	str r1, [r0]   
+	ldr r0, sUnusedOverworldCallback	
+	str r1, [r0]
+CheckIfSeedOn:
+	ldr r3, SeedLocation @I store the seed in the flash memory chip with this code. 
+	mov r2, #12          @if the value here is 1 I don't do the seed process.
+	add r2, r3
+	ldrb r0, [r2]
+	cmp r0, #1
+	beq RestoreMusicRepelSettings
+SeedRNG:
+	ldrh r0, [r3]        @Load SeedLocations current value, should only be up to FFFF to keep 16 bit.
+	add r0, #1           @add 1 to it to increment.
+	ldr r1, gRNGValue    @store in gRNGValue, where the LCGRNG will do its thing!
+	str r0, [r1]         
+	str r0, [r3]         @store seeds current value in flash memory sector.
+RestoreMusicRepelSettings:
+	add r3, #4
+	ldr r0, [r3]		 @load last music setting
+	ldr r1, gDisableMusic
+	strb r0, [r1]
+	ldr r1, sMapMusicState
+	strb r0, [r1]
+RestoreRepelSettings:
+	add r3, #4           @load last repel setting
+	ldr r0, [r3]		 
+	ldr r1, sWildEncountersDisabled
+	strb r0, [r1]
+	movs r0, #30         @this will save the new seed in the flash memory chip without the user having to save, so seed increment persists.
+	ldr r1, gSaveDataBuffer
+	ldr r3, TryWriteSector
+	bl Branch
+	ldr r0, VblankIntrLocation   @Where my code that runs during VblankIntr currently is (in gSaveDataBuffer).
+	ldr r1, VBlankIntr_CheckSave @This is where in EWRAM I found to store my persistent vblankintr code. I haven't had it overwritten by normal gameplay so far.r
+	ldr r2, CopyAmountVblankIntr @Size of my vblankintr code. 
+	swi #11                      @memory copy
+SetVBlankIntr_Ptr:
+	ldr r0, VBlankIntrPointer    @change vblankintr pointer to my custom code location
+	ldr r1, VBlankIntr_CheckSave
+	str r1, [r0]
+End:
+	pop {pc}                     @return to testegg.txt
+Branch:
+	bx r3
+.align
+VBlankIntrPointer:
+    .long 0x03002720            
+VBlankIntr_CheckSave:
+	.long 0x0201b201             @my code that runs every frame. It's in EMSEED.txt file. 
+SeedLocation:
+	.long 0x0203AF1C            @where initseed is stored relative to gSaveDataBuffer
+gRNGValue:
+	.long 0x03005d80
+gSaveDataBuffer:
+	.long 0x0203abbc             @These two are the same, I originally didn't think they would be but didn't want to change code size once it all worked.
+VblankIntrLocation:
+	.long 0x0203ac8c
+CopyAmountVblankIntr:            @amount of words & copy type for vblankintr code.
+	.long 0x040000A8 	
+TryWriteSector:
+	.long 0x08152909
+sUnused:
+	.long 0x02022c34 
+gDisableMusic:
+	.long 0x03005df8
+sWildEncountersDisabled:
+	.long 0x02038c00
+sMapMusicState:
+	.long 0x03000f4c 
+sUnusedOverworldCallback:
+	.long 0x03000e0c
+	

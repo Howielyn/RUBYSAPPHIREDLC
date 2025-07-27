@@ -1,0 +1,348 @@
+IsWaiting:                            @to understand code properly, it might be better to start reading at CheckSave. IsWaiting, ClearWait, & EqualPreviousSave rely on code from it as they wait for a success state.      
+	push {r0-r7}                      @preserve gp registers
+	mov r2, #255                      @If my vblankintr is running during a save, game will crash. 
+	add r2, #10                       @IsWaiting is checking if a value in sUnused is 0.
+	ldr r1, sUnused                   @if it's not, it increments it by 1 until we reach 265. This is about how long the game takes to save.
+	ldr r0, [r1]                      
+	cmp r0, #0                        @if the value here is 0, we go to the code that checks if we're currently saving. 
+	beq CheckSave
+	add r0, #1                       
+	cmp r0, r2
+	beq ClearWait                     @if the value is 265, we clear sUnused to 0 in ClearWait. This will end the timer. 
+	str r0, [r1]
+	b ExitToVblankIntr                @if the timer is above 0, but under 265, we immediately exit to regular vblankintr function. 
+ClearWait:
+	mov r0, #0                        @this ends waiting timer. 
+	str r0, [r1]                      @if sUnusedOverworldCallback contains 1, a save happened and we run EqualPreviousSave
+	ldr r1, sUnusedOverworldCallback
+	ldr r0, [r1]
+	cmp r0, #1
+	bne CheckSave
+EqualPreviousSave:                    @when wait timer ends, we have to re-set some values to make the loop work again.
+	mov r0, #0                        @remove save check so can save again.
+	str r0, [r1]
+	mov r0, #30
+	ldr r1, gSaveDataBuffer           @Load my data & code section 30 into 0x02010820. You can't use gSaveDataBuffer while the game is saving. 
+	ldr r3, ReadFlashSector           @forgot to change name of gSaveDataBuffer to gSaveDataBufferFake
+	bl Branch                           
+	ldr r1, gPokemonStoragePtr        @Load Pokemon Storage pointer to begin to restore PC Boxes post-save / game load. 
+	ldr r1, [r1]                      @gPokemonStoragePtr tells me where PC Boxes currently start. 
+	ldr r2, Box12Slot13               @this is where box 12 slot 13 begins. Offset found using https://adrichu00.github.io/WhichBox/.
+	add r1, r2                        @Adds offset to gPokemonStoragePtr
+	ldr r0, gSaveDataBuffer500        @this is 500 bytes into where save sector 30 was loaded. It's where I store the Pokemon so they don't overwrite my code.
+	ldr r2, CopyBoxSlots              @This is how many words the 5 box slots I copy is, and which copy type to use.
+	SWI #11                           @bios memory copy. r0 is source address, r1 is destination, r2 is word amount                                
+CheckSave:							  @Main Loop to check if saving.        
+	ldr r0, sSaveDialogeCallback      @to check if we're saving, I see if sSaveDialogueCallback is 0x080A0235, which is for the NOW SAVING... text.
+	ldr r0, [r0]
+	ldr r1, ValueSaveDialogeCallback
+	cmp r0, r1                      
+	bne AreInOverWorld2              @if sSaveDialogeCallback is not equal to ValueSaveDialogeCallback(0x080A0235), exit to normal vblankintr.
+StoreBox:
+	ldr r0, sUnused                   @if not equal, hijack. 
+	mov r1, #1                       @Once success state is triggered, place 1 into sUnused for IsWaiting to begin its loop of 265 frames. 
+	str r1, [r0]
+	ldr r0, sUnusedOverworldCallback  @set this callback to 1. If it's 1, EqualPreviousSave will trigger. 
+	str r1, [r0]
+	ldr r0, gObjectEventPlayer        @#110 = 0x6E glitch movement type. 
+	mov r1, #110                      @I write the glitch movement type every frame to the players object event so that when we save, it's the correct type. 
+	strb r1, [r0]     
+	movs r0, #30
+	ldr r1, gSaveDataBuffer           @load value from save sector 30. I do not use actual gSaveDataBuffer. It's 0x02010820 
+	ldr r3, ReadFlashSector           @if you use gSaveDataBuffer while saving, game crashes / fails to save. So must use other address. 
+	bl Branch
+	ldr r0, gPokemonStoragePtr        @Find current position of PC Boxes
+	ldr r0, [r0]                      @jump to offset of box 12 slot 13. Found with https://adrichu00.github.io/WhichBox/
+	ldr r1, Box12Slot13               @While entrypoint for 0x6E is statically 02030401, ASLR shifts which box slots this covers.    
+	add r0, r1                        @It can cover slot13 to slot16. So I 0 them out and start my code in box 17, so my code never goes above 02030401.
+	ldr r1, gSaveDataBuffer500        @This will copy box 12 slot 13 - box 12 slot 17 from the PC to 500 bytes into 0x02010820. 
+	ldr r2, CopyBoxSlots              @words & copy type of pokemon
+	SWI #11                           @bios memory copy. r0 is source address, r1 is destination, r2 is word amount to copy. 
+	ldr r0, gPokemonStoragePtr        @similar to above, but instea of a bios memory copy, I do bios memory fill. 
+	ldr r0, [r0]
+	ldr r1, Box12Slot13
+	add r1, r0
+	ldr r0, gUnusedControllerStruct   @a space in ram that's always 0, so use that as word to fill. 
+	ldr r2, FillBoxSlots              @memorycopy/fill is controlled by bit 24 of length value in r2.  
+	SWI #11			          @bios memory fill. r0 is source address of value to fill, r1 is destination, r2 is word amount to fill. 
+	ldr r0, gDisableMusic             @These are storing bools for whether or not disablemusic, wildneouncters, and the seed fix are enabled via butotn presses.
+	ldrb r0, [r0]
+	ldr r1, SeedLocation
+	add r1, #4
+	strb r0, [r1]
+	ldr r0, sWildEncountersDisabled
+	ldrb r0, [r0]
+	add r1, #4
+	strb r0, [r1]
+	ldr r0, sUnusedBattlersArray
+	ldrb r0, [r0]
+	add r1, #4
+	strb r0, [r1]
+	mov r0, #30                      @saves Pokemon into sector 30!
+	ldr r1, gSaveDataBuffer 
+	ldr r3, TryWriteSector
+	bl Branch
+BadEggCode:
+	ldr r0, gPokemonStoragePtr        @location of pc boxes currently. 
+	ldr r0, [r0]
+	ldr r1, Box17Offset               @jump to offset of box 12 slot 17. Found with https://adrichu00.github.io/WhichBox/
+	add r1, r0                        @this is where I will store the actual code in testegg.txt.
+	ldr r0, BadEggLocation            @this is where in save sector 30 my code for box 17 is stored.
+	ldr r2, CopyBox17                 @amount of words to copy. Coincidentally exactly 1 boxmon in length, otherwise I'd have to delete and store box 18 as well.
+	SWI #11                           @bios memory copy. r0 is source address, r1 is destination, r2 is word amount to copy.
+	b ExitToVblankIntr
+AreInOverWorld2:
+	ldr r0, gMain_CB2                 @Check if we're in currently in overworld. 
+	ldr r0, [r0]
+	ldr r1, CB2_OverworldBasic
+	cmp r0, r1                        @if we are, exit to vblankintr
+	bne AreInPartyMenu
+CheckRButtonPress:
+	ldr r0, Buttons                   @Check value of button press against r button. This is a location in IO RAM. Buttons appear as halfword 3FF, and each button press subtracts from that value. 
+	ldr r0, [r0]
+	ldr r1, RButton
+	cmp r0, r1
+	bne CheckRRight
+	ldr r0, gDisableMusic
+	ldrb r2, [r0]
+	mov r1, #1
+	eor r2, r1                       @Hitting R Switches music on/off. gDisableMusic and MusicState can just be exclusive or'd to flip their bytes from 1 to 0 to turn them off. 
+	strb r2, [r0]
+	ldr r3, sMapMusicState
+	strb r2, [r3]
+	cmp r2, #0                       @if r2 ends up being 0, need to run playbgm.
+	beq TurnMusicOn
+	b DebounceTimer
+TurnMusicOn:
+	ldr r3, PlayBGM
+	ldr r0, sMapMusicState
+	sub r0, #4
+	ldrh r0, [r0]
+	bl Branch
+	b DebounceTimer
+CheckRRight:
+	ldr r1, RRightButtons
+	cmp r0, r1
+	bne CheckRSelect
+	ldr r0, sWildEncountersDisabled
+	ldrb r2, [r0]
+	mov r1, #1
+	eor r2, r1
+	strb r2, [r0]
+	b PlaySound
+CheckRSelect:
+	ldr r1, SelectR
+	cmp r0, r1
+	bne AreInPartyMenu
+	ldr r0, sUnusedBattlersArray
+	ldrb r2, [r0]
+	mov r1, #1
+	eor r2, r1
+	strb r2, [r0]
+	b PlaySound
+AreInPartyMenu:
+	ldr r0, gMain_CB2                 @check if we're in party menu
+	ldr r2, [r0]
+	ldr r1, CB2_ReturnToPartyMenuFromSummaryScreen
+	cmp r2, r1                       
+	beq RestoreStats
+	ldr r1, CB2_ReturnToFieldWithOpenMenu
+	cmp r2, r1                        @if we are, exit to vblankintr
+	beq LeavePartyMenu
+	ldr r2, [r0]
+	ldr r1, CB2_UpdatePartyMenu
+	cmp r2, r1
+	bne ExitToVblankIntr		 	  @if we're not, end.
+	sub r0, #4						  @if we are in a battle, don't allow.
+	ldr r0, [r0]
+	ldr r1, BattleMainCB1
+	cmp r0, r1
+	beq ExitToVblankIntr 
+CheckButtonPress:                    @checks what buttons are being pressed in party menu for ev/iv viewer.
+	mov r4, #39                      @value for HP IV Index for getmondata
+	ldr r0, Buttons
+	ldr r0, [r0]
+	ldr r1, SelectR 
+	cmp r0, r1
+	beq ChangeStats                  @if select+r was pushed, do IV Check
+	ldr r1, SelectStart
+	cmp r0, r1
+	beq SetEVs
+	b ExitToVblankIntr
+SetEVs:
+	mov r4, #26                     @if start+select was pushed, move HP EV Index for getmondata into r4
+ChangeStats:
+	ldr r0, gPlayerParty		@load pokemon iv I want to edit
+	mov r5, r0					@copy gplayerparty into r5
+	mov r6, r0                  @copy glayerparty into r6
+PokemonLoop:			
+	mov r1, #11					@check if species is 0, if it is, exit loop.
+	ldr r3, GetMonData2
+	bl Branch
+	cmp r0, #0
+	beq PlaySound
+	mov r0, r5
+	ldr r1, gEnemyParty         @checks if we're at enemy party, if we are, exit loop
+	cmp r0, r1
+	beq PlaySound               
+	mov r7, #0                  @set up the ev/iv read loop.
+	add r5, #0x58               @if we're not done, add 0x58 to get to next pokemon in party
+IVLoop:
+	mov r1, r4                  @current iv index
+	add r1, r7
+	ldr r3, GetMonData2         @getmondata for evs or ivs based on what is in r4.
+	bl Branch
+	add r7, #1                  @add 1 to loop counter
+	cmp r7, #6                  @check if we've done 6 stats
+	bgt NextPokemon             @if we have, stop loop and go to next pokemon
+	strh r0, [r5]               @store IV or EV in stat
+	add r5, #2                  @get to next raw stat location
+	mov r0, r6                  @put current gplayerparty location back into r0.
+	b IVLoop
+NextPokemon:
+	mov r6, r5
+	mov r0, r6
+	b PokemonLoop
+PlaySound:
+	ldr r3, PlaySE
+	mov r0, #01
+	bl Branch
+DebounceTimer:
+	ldr r0, sUnused
+	mov r1, #255
+	str r1, [r0]
+	b ExitToVblankIntr
+LeavePartyMenu:
+	add r0, #8
+	ldr r2, [r0]
+	ldr r1, VBlankCB_PartyMenu
+	cmp r2, r1
+	bne ExitToVblankIntr
+RestoreStats:
+	mov r7, #0
+	ldr r5, gPlayerParty
+CalculateStatsLoop:
+	mov r4, r5
+	add r4, #86
+	ldrh r6, [r4]
+	ldr r3, CalculateMonStats
+	mov r0, r5
+	bl Branch
+	add r7, #1
+	strh r6, [r4]
+	add r5, #100
+	cmp r7, #6
+	bne CalculateStatsLoop
+	ldr r0, sUnused                   @if not equal, hijack. 
+	mov r1, #255                       @Once success state is triggered, place 1 into sUnused for IsWaiting to begin its loop of 265 frames. 
+	str r1, [r0]
+ExitToVblankIntr:
+	ldr r0, VBlankIntrLR              @Restore proper LR VblankIntr needs.
+	mov lr, r0
+AreInOW2:
+	ldr r1, MapHeaderBikeBool          @check if we're in hall of fame. If we are, exit to vblankintr
+	mov r0, #0xF
+	strb r0, [r1]
+	ldr r0, gMain_CB2                 @Check if we're in currently in overworld. 
+	ldr r0, [r0]
+	ldr r1, CB2_OverworldBasic
+	cmp r0, r1                        @if we are, exit to vblankintr
+	beq End
+	ldr r0, gObjectEventPlayer        @if we're not in cb2 overworld, set gObjectEventPlayer movement type to 0x0B (movementtype player)
+	mov r1, #11                       @movementtypecallback only updates on map load. So if we go into a menu, or battle, etc, game would crash. 
+	strb r1, [r0]                     @since our code isn't in box slot 17 yet. By changing it to 0B, game behaves as normal every frame!
+End:
+	pop {r0-r7}
+	ldr r3, VBlankIntr
+Branch: @by using BL to go to this small function, the link register is set to the instruction after BL, and wherever I BX to will return there rather here. 
+	bx r3
+.align
+VBlankIntr:
+	.long 0x08000739
+VBlankIntrLR:
+	.long 0x0300287C
+ReadFlashSector:
+	.long 0x0815314D
+gSaveDataBuffer:                      @not actual gsavadatabuffer. Never changed name. Pick a random unused spot in ewram instead. 
+	.long 0x02010820 
+gPokemonStoragePtr:                
+	.long 0x03005d94 
+Box17Offset:                          @box 17 location relative to gPokemonStoragePtr. 
+	.long 0x00006BF9 
+gSaveDataBuffer500:                   @where I store players pokemon in save sector 1e. 
+	.long 0x02010D20
+Box12Slot13:                          @box 13 location.
+	.long 0x00006AE4
+CopyBoxSlots:                         @word amount of boxes 13-17.
+	.long 0x04000063
+FillBoxSlots:
+	.long 0x05000063 
+VBlankCallBack:
+	.long 0x03002720 
+sUnused:                              @where I store my timer for IsWaiting
+	.long 0x02022c34 
+gUnusedControllerStruct:              @a value that is always 0.
+	.long 0x02022d0c 
+TryWriteSector:
+	.long 0x08152909 
+gObjectEventPlayer:
+	.long 0x02037356
+gMain_CB2:
+	.long 0x30022c4	
+CB2_OverworldBasic:
+	.long 0x08085e5D 
+MapHeaderBikeBool:
+	.long 0x02037332
+CopyBox17:                            @box 17 word count. 
+	.long 0x04000014
+BadEggLocation:                       @where I store code for box 17.
+	.long 0x02010820
+ValueSaveDialogeCallback:
+	.long 0x080A0235
+sSaveDialogeCallback:
+	.long 0x0203761c 
+RButton:
+	.long 0x000002FF
+RRightButtons:
+	.long 0x000002EF
+Buttons:
+	.long 0x04000130
+gDisableMusic:
+	.long 0x03005df8
+sWildEncountersDisabled:
+	.long 0x02038c00
+SeedLocation:
+	.long 0x02010b80            @where initseed is stored relative to gSaveDataBuffer
+PlaySE:
+	.long 0x080a37a5
+sMapMusicState:
+	.long 0x03000f4c 
+PlayBGM:
+	.long 0x080a3779 
+CB2_UpdatePartyMenu:
+	.long 0x081b01b1
+gPlayerParty:
+	.long 0x020244ec 
+gEnemyParty:
+	.long 0x02024744 
+GetMonData2:
+	.long 0x0806a519 
+SelectR:
+	.long 0x000002fb
+SelectStart:
+	.long 0x000003f3
+BattleMainCB1:
+	.long 0x08039EF1
+CB2_ReturnToPartyMenuFromSummaryScreen:
+	.long 0x081b3895 
+VBlankCB_PartyMenu:
+	.long 0x081b01cd
+CalculateMonStats:
+	.long 0x08068d0D
+CB2_ReturnToFieldWithOpenMenu:
+	.long 0x08086195
+sUnusedOverworldCallback:
+	.long 0x03000e0c
+sUnusedBattlersArray:
+	.long 0x02024284
+	

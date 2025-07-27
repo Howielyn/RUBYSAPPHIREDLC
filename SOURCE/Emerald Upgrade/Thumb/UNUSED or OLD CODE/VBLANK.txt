@@ -1,0 +1,28 @@
+Start:
+	ldr r0, sUnusedOverworldCallback
+	ldr r3, [r0]
+	cmp r3, #0
+	bne ColoRNG
+	ldr r0, gRNGValue
+	ldr r3, [r0]
+ColoRNG:	
+	ldr r1, ColoMult
+	ldr r2, ColoAdd
+	mul r3, r1
+	add r3, r2
+	ldr r0, sUnusedOverworldCallback
+	str r3, [r0]
+	ldr r3, VBlankIntr
+	bx r3
+.align
+gRNGValue:
+	.long 0x03005d80
+ColoMult:
+	.long 0x000343FD
+ColoAdd:
+	.long 0x00269EC3
+sUnusedOverworldCallback:
+	.long 0x03000e0c
+VBlankIntr:
+	.long 0x08000739
+	

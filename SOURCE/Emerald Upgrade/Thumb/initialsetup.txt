@@ -1,0 +1,22 @@
+Seed:
+	push {r0-r7}                  @preserve gp registers.
+	ldr r0, VblankIntrLocation    @copy code that runs every frame from gsavedatabuffer to a random safe spot in ewram I found. 
+	ldr r1, VBlankIntr_CheckSave
+	ldr r2, CopyAmountVblankIntr
+	swi #11                       @bios memory copy. r0 is source address, r1 is destination, r2 is word amount to copy. 
+SetVBlankIntr_Ptr:
+	ldr r0, VBlankIntrPointer     @change vblankintr current pointer to 0x0201b201, said random safe ewram spot. 
+	ldr r1, VBlankIntr_CheckSave
+	str r1, [r0]
+End:
+	pop {r0-r7}                   @restore gp registers. 
+	bx lr
+.align
+VBlankIntrPointer:                @SeedLocation & gRNGValue are currently unused, can delete. 
+    .long 0x03002720 
+VBlankIntr_CheckSave:
+	.long 0x0201b201
+VblankIntrLocation:
+	.long 0x0203ac8c 
+CopyAmountVblankIntr:             @Change wordcount. wordcount of EMSEED.txt
+	.long 0x040000A8 

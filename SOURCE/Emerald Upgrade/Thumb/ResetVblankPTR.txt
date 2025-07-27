@@ -1,0 +1,14 @@
+Seed:
+	push {r0-r7}
+SetVBlankIntr_Ptr:
+	ldr r0, VBlankIntrPointer
+	ldr r1, VBlankIntr
+	str r1, [r0]
+End:
+	pop {r0-r7}
+	bx lr
+.align
+VBlankIntrPointer:
+    .long 0x03002720 
+VBlankIntr:
+	.long 0x08000739

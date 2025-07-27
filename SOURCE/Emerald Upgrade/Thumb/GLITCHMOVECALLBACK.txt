@@ -1,0 +1,40 @@
+Start:
+	push {r0-r7}      @Preserve gp registers
+	ldr r1, gMain     @Player Movement type has to be 0x0B if gmain is #0 or else game crashes.
+	ldr r1, [r1, #12]
+	cmp r1, #0
+	mov r1, #0xB
+	bpl SetMoveType
+	add r1, r1, #0x63 @if it's not 0, we change it back to 6E. 
+SetMoveType:
+	ldr r2, MovementType
+	strb r1, [r2]
+LoadFlashMemory:      @To minimize code in PC slots, most of the setup code is in sector 30 of flash memory. 
+	mov r0, #30
+	ldr r1, gSaveDataBuffer
+	ldr r3, ReadFlashSector
+	bl Branch
+	ldr r3, GAMELOADSETUP @most of actual setup code is in this file. 
+	bl Branch
+	pop {r0-r7}
+	ldr r0, LRFix         @this is what LR was when the game breaks at 02030401, so I restore it. 
+	mov lr, r0
+	ldr r3, CB2_ReturnToFieldFadeFromBlack @this exits glitch movement type hook & restores normal player movement type. 
+Branch:
+	bx r3
+.align
+gMain: 
+	.long 0x030022c0
+MovementType: @this is where player movement type is in emerald, it's in gObjectEvents.
+	.long 0x02037356
+CB2_ReturnToFieldFadeFromBlack: @reloads map & make sure player keeps facing same way. CB2_LoadMap2 always faces you down.
+	.long 0x080861e9
+gSaveDataBuffer: @Save data buffer location. 
+	.long 0x0203abbc 
+ReadFlashSector:
+	.long 0x0815314d
+GAMELOADSETUP:       @where GAMELOADSETUP is in RAM after loading it into gSaveDataBuffer.
+	.long 0x0203ac05
+LRFix:               @not sure what this is, but it's what LR is when movementtype broke, game crashes if I don't preserve. 
+	.long 0x080069E7
+	

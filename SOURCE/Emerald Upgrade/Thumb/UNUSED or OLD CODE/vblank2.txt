@@ -1,0 +1,44 @@
+    ldr     r0, gMain_callBack2
+    ldr     r1, [r0]
+    ldr     r2, CB2_InitBattle
+    cmp     r1, r2
+    bne     exit2
+exit:
+    ldr     r0, gEnemyParty
+    add     r0, #0x54
+    mov     r1, #100
+    ldrb    r2, [r0]
+    cmp     r1, r2
+    beq     exit2
+    
+    strb    r1, [r0]
+    ldr     r0, gEnemyParty
+    mov     r1, #56
+    mov     r2, #100
+    ldr     r3, SetMonData
+    push    {r4-r7}
+    mov     r4, pc
+    add     r4, #7
+    mov     lr, r4
+    pop     {r4-r7}
+    bx      r3
+
+exit2:
+    ldr     r0, LRFIX
+    mov     lr, r0
+    ldr     r0, VBlankIntr
+    bx      r0
+
+.align
+gMain_callBack2:
+    .long   0x03001774
+gEnemyParty:
+    .long   0x030045c0
+VBlankIntr:
+    .long   0x08000571
+CB2_InitBattle:
+    .long   0x0800e7c5
+SetMonData:
+    .long   0x0803d1fd
+LRFIX:
+    .long   0x03001D0C
