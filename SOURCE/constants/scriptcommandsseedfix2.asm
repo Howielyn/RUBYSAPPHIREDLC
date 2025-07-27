@@ -1,0 +1,1858 @@
+LASTRESULT EQU $800D
+end: MACRO
+	db $02
+	ENDM
+return: MACRO
+	db $03
+	ENDM
+goto: MACRO
+	db $05
+	dd \1
+	ENDM
+goto_if: MACRO
+	db $06
+	db \1
+	dd \2
+	ENDM
+call_if: MACRO
+	db $07
+	db \1
+	dd \2
+	ENDM
+gotostd: MACRO
+	db $08
+	db \1
+	ENDM
+callstd: MACRO
+	db $09, \1
+	ENDM
+gotostd_if: MACRO
+	db $0A
+	db \1
+	db \2
+	ENDM
+callstd_if: MACRO
+	db $0B
+	db \3
+	db \2
+	ENDM
+returnram: MACRO
+	db $0C
+	ENDM
+killscript: MACRO
+	db $0D
+	ENDM
+setbyte: MACRO
+	db $0E, \1
+	ENDM
+loadword: MACRO
+	db $0F
+	db \1
+	dd \2
+	ENDM
+callasm: MACRO
+	db $23
+	dd \1
+	ENDM
+loadbyte: MACRO
+	db $10
+	db \1
+	db \2
+	ENDM
+writebytetoaddr: MACRO
+	db $11
+	db \1
+	dd \2
+	ENDM
+loadbytefromaddr: MACRO
+	db $12
+	db \1
+	dd \2
+	ENDM
+setptrbyte: MACRO
+	db $13
+	db \1
+	dd \2
+	ENDM
+copylocal: MACRO
+	db $14
+	db \1
+	db \2
+	ENDM
+copybyte: MACRO
+	db $15
+	dd \1
+	dd \2
+	ENDM
+setvar: MACRO
+	db $16
+	dw \1
+	dw \2
+	ENDM
+addvar: MACRO
+	db $17
+	dw \1
+	dw \2
+	ENDM
+subvar: MACRO
+	db $18
+	dw \1
+	dw \2
+	ENDM
+copyvar: MACRO
+	db $19
+	dw \1
+	dw \2
+	ENDM
+copyvarifnotzero: MACRO
+	db $1A
+	dw \1, \2
+	ENDM
+comparefarbytetobyte: MACRO
+	db $1F
+	dd \1
+	db \2
+	ENDM
+compare: MACRO
+	db $21
+	dw \1, \2
+	ENDM
+setflag: MACRO
+	db $29
+	dw \1
+	ENDM
+clearflag: MACRO
+	db $2A
+	dw \1
+	ENDM
+checkflag: MACRO
+	db $2B
+	dw \1
+	ENDM
+playfanfare: MACRO
+	db $31
+	dw \1
+	ENDM
+waitfanfare: MACRO
+	db $32
+	ENDM
+getpartysize: MACRO
+	db $43
+	ENDM
+fadeout: MACRO
+	db $37
+    dw \1
+	ENDM
+additem: MACRO
+	db $44
+	dw \1, \2
+	ENDM
+checkitemroom: MACRO
+	db $46
+	dw \1, \2
+	ENDM
+checkitem: MACRO
+	db $47
+	dw \1, \2
+	ENDM
+checkitemtype: MACRO
+	db $48
+	dw \1
+	ENDM
+checkpcitem: MACRO
+	db $4A
+	dw \1, \2
+	ENDM
+adddecoration: MACRO
+	db $4b
+	dw \1
+	ENDM
+faceplayer: MACRO
+	db $5A
+	ENDM
+waitmsg: MACRO
+	db $66
+	ENDM
+lockall: MACRO
+	db $69
+	ENDM
+lock: MACRO
+	db $6A
+	ENDM
+release: MACRO
+	db $6C
+	ENDM
+waitkeypress: MACRO
+	db $6D
+	ENDM
+showmonpic: MACRO
+	db $75
+	dw \1
+	db \2
+	db \3
+	ENDM
+hidemonpic: MACRO
+	db $76
+	ENDM
+hidesprite: MACRO
+	db $53
+	dw \1
+	ENDM
+showcontestpainting: MACRO
+	db $77
+	db \1
+	ENDM
+braillemessage: MACRO
+	db $78
+	dd \1
+	ENDM
+brailleformat: MACRO
+	db \1
+	db \2
+	db \3
+	db \4
+	db \5
+	db \6
+	ENDM
+givemon: MACRO
+	db $79
+	dw \1
+	db \2
+	dw \3
+	dd \4
+	dd \5
+	db \6
+	ENDM
+giveegg: MACRO
+	db $7A
+	dw \1
+	ENDM
+setmonmove: MACRO
+	db $7b
+	db \1
+	db \2
+	dw \3
+	ENDM
+checkpartymove: MACRO
+	db $7c
+	dw \1
+	ENDM
+bufferspeciesname: MACRO
+	db $7d
+	db \1
+	dw \2
+	ENDM
+bufferleadmonspeciesname: MACRO
+	db $7E
+	db \1
+	ENDM
+bufferpartymonnick: MACRO
+	db $7f
+	db \1
+	dw \2
+	ENDM
+bufferitemname: MACRO
+	db $80
+	db \1
+	dw \2
+	ENDM
+bufferdecorationname: MACRO
+	db $81
+	db \1
+	dw \2
+	ENDM
+buffermovename: MACRO
+	db $82
+	db \1
+	dw \2
+	ENDM
+random: MACRO
+	db $8F
+	dw \1
+	ENDM
+sound: MACRO
+       db $2F
+       dw \1
+       ENDM
+special: MACRO
+       db $25
+       dw \1
+       ENDM
+pause: MACRO
+       db $28
+       dw \1
+       ENDM
+setrespawn: MACRO
+	db $9F
+	dw \1
+	ENDM
+checkplayergender: MACRO
+	db $A0
+	ENDM
+applymovement: MACRO
+        db $4F
+        dw \1 
+        dd \2
+        ENDM
+waitmovement: MACRO
+        db $51
+        db \1 
+        ENDM
+playmoncry: MACRO
+	db $A1
+	dw \1
+	dw \2
+	ENDM
+playsong: MACRO
+	db $33
+	dw \1
+	db \2
+	ENDM
+setwildbattle: MACRO
+	db $B6
+	dw \1
+	db \2
+	dw \3
+	ENDM
+dowildbattle: MACRO
+	db $B7
+	ENDM
+setvirtualaddress: MACRO
+	db $B8
+	GBAPTR \1
+	ENDM
+waitstate: MACRO
+           db $27
+           ENDM
+virtualgotoif: MACRO
+	db $BB
+	db \1
+	GBAPTR \2
+	ENDM
+virtualmsgbox: MACRO
+	db $BD
+	GBAPTR \1
+	ENDM
+virtualloadpointer: MACRO
+	db $BE
+	GBAPTR \1
+	ENDM
+waitmoncry: MACRO
+	db $C5
+	ENDM
+setmoneventlegal: MACRO
+	db $CD
+	dw \1
+	ENDM
+checkmoneventlegal: MACRO
+	db $CE
+	dw \1
+	ENDM
+
+setmonmetlocation: MACRO
+	db $D2
+	dw \1
+	db \2
+	ENDM
+warp: MACRO
+	db $3F
+	db \1
+	db \2
+	db \3
+	db \4
+        db \5
+	ENDM
+buffernumber: MACRO
+	db $83
+	db \1
+	dw \2
+	ENDM
+closeonkeypress: MACRO
+	db $68
+	ENDM
+EVENTLEGAL: MACRO
+	db $02
+	db $48
+	db $4F
+	db $21
+	db $03
+	db $4B
+	db $03
+	db $A2
+	db $18
+	db $47
+	db $70
+	db $47
+	db $C0
+	db $45
+	db $00
+	db $03
+	db $ED
+	db $D2
+	db $03
+	db $08
+	db $10
+	db $00
+	db $00
+	db $00
+	ENDM
+EVENTLEGAL2: MACRO
+	db $00
+	db $02
+	db $48
+	db $4F
+	db $21
+	db $02
+	db $4B
+	db $03
+	db $A2
+	db $18
+	db $47
+	db $00
+	db $00
+	db $C0
+	db $45
+	db $00
+	db $03
+	db $ED
+	db $D2
+	db $03
+	db $08
+	db $10
+	db $00
+	db $00
+	db $00
+	ENDM
+METLOCATION: MACRO
+        db $02
+        db $48
+        db $23
+        db $21
+        db $02
+        db $4B
+        db $03
+        db $A2
+        db $18
+        db $47
+        db $00
+        db $00
+        db $C0
+        db $45
+        db $00
+        db $03
+        db $ED
+        db $D2
+        db $03
+        db $08
+        db $C8
+        db $00
+        db $00
+        db $00
+        ENDM
+GAMEORIGIN: MACRO
+        db $02
+        db $48
+        db $25
+        db $21
+        db $02
+        db $4B
+        db $03
+        db $A2
+        db $18
+        db $47
+        db $00
+        db $00
+        db $C0
+        db $45
+        db $00
+        db $03
+        db $ED
+        db $D2
+        db $03
+        db $08
+        db $03
+        db $00
+        db $00
+        db $00
+        ENDM
+GAMELANG: MACRO
+        db $02
+        db $48
+        db $03
+        db $21
+        db $02
+        db $4B
+        db $03
+        db $A2
+        db $18
+        db $47
+        db $00
+        db $00
+        db $C0
+        db $45
+        db $00
+        db $03
+        db $ED
+        db $D2
+        db $03
+        db $08
+        db $01
+        db $00
+        db $00
+        db $00
+        ENDM
+TID: MACRO
+	db $00
+	db $02
+	db $49
+	db $00
+	db $20
+	db $08
+	db $80
+	db $70
+	db $47
+	db $00
+	db $00
+	db $AE
+	db $4E
+	db $02
+	db $02
+	ENDM
+fadescreen: MACRO
+	db $97
+	db \1
+	ENDM
+doanimation: MACRO
+	db $9C
+	dw \1
+	ENDM
+settrainer: MACRO
+	db $00
+	dw $2001
+	dw $2001
+	dw $2200
+	dw $4B01
+	dw $4718
+        dw $0000
+	dd $080b0805
+	ENDM
+calcscriptchecksum: MACRO
+	db $00
+	dw $B5FF
+	dw $467C
+	dw $3407
+	dw $46A6
+	dw $4802
+	dw $4700
+	dw $4802
+	dw $8002
+	dw $BDFF
+	dw $0000
+	dd $08065761
+	dd $02028dc4
+	ENDM
+SPRITE: MACRO
+	db $00
+	db $06
+	db $48
+	db $07
+	db $4D
+	db $03
+	db $4E
+	db $00
+	db $21
+	db $00
+	db $22
+	db $00
+	db $23
+	db $02
+	db $4F
+	db $18
+	db $24
+	db $38
+	db $47
+	db $00
+	db $00
+	db $44
+	db $21
+	db $37
+	db $08
+	db $DD
+	db $0B
+	db $00
+	db $08
+	db $98	
+	db $7D
+	db $00
+	db $03
+	db $0C
+	db $49
+	db $00
+	db $30
+	ENDM
+MOVEGIRL: MACRO
+	db $74
+	db $76
+	db $75
+	db $77
+	db $88
+	db $74
+	db $76
+	db $75
+	db $77
+	db $70
+	db $71
+	db $72
+	db $73
+	db $70
+	db $71
+	db $72
+	db $73
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $88
+	db $FE
+	ENDM
+MEMCOPYJIRACHI: MACRO
+        dw $B4FF
+        dw $4802
+        dw $4902
+        dw $4A02
+        dw $DF0B
+        dw $4770
+	dd $020001B8
+	dd $030045C0
+	dd $04000014
+	ENDM
+TEMPJIRACHI: MACRO
+	dd $00000000
+	dd $00009CBA
+	dd $BBCCC3C4
+	dd $FFC3C2BD
+	dd $02020000
+	dd $C8BBC2BD
+	dd $00C6BFC8
+	dd $0000A0DB
+	dd $00000199
+	dd $0002625A
+	dd $00006400
+	dd $005E0111
+	dd $015B0007
+	dd $140F0A0A
+	dd $00000000
+	dd $00000000
+	dd $00000000
+	dd $2080FF00	
+	dd $00000000
+	dd $00000000
+	ENDM
+EMERALDASLRCOMP: MACRO
+	dw $4D04
+	dw $682D
+	dw $4804
+	dw $4906
+	dw $4A04
+	dw $4E06
+	dw $1BAD
+	dw $4429
+	dw $DF0B
+	dw $4770
+	dd $03005d90
+	dd $02024744
+	dd $0400002D
+	dd $02025640
+	dd $02024a54
+	ENDM
+TESTASLR: MACRO
+	dw $B4FF
+	dw $4E17
+	dw $6830
+	dw $4917
+	dw $6008
+	dw $4817
+	dw $6800
+	dw $4917
+	dw $1A47
+	dw $4817
+	dw $4917
+	dw $6001
+	dw $4A17
+	dw $2302
+	dw $7013
+	dw $4817
+	dw $4438
+	dw $7801
+	dw $3001
+	dw $7802
+	dw $3001
+	dw $7803
+	dw $3001
+	dw $7804
+	dw $4411
+	dw $4419
+	dw $4421
+	dw $4249
+	dw $4A11
+	dw $4B12
+	dw $0409
+	dw $4351
+	dw $4419
+	dw $6031
+	dw $0000
+	dw $0000
+	dw $4914
+	dw $480F
+	dw $6008
+	dw $480F
+	dw $490F
+	dw $6001
+	dw $480F
+	dw $4910
+	dw $6001
+	dw $BCFF
+	dw $4770
+	dw $0000
+	dd $03005D80
+	dd $02024744
+	dd $03005d90 
+	dd $02024a54
+	dd $02022FEC
+	dd $013E0002
+	dd $030026F9
+	dd $2024A5E
+	dd $EEB9EB65
+	dd $A3561A1
+	dd $080861b1
+	dd $20375c4
+	dd $FFFD6F54 
+	dd $03000e48
+	dd $0202926A
+	dd $030022c4
+	ENDM
+TESTMEMFILL: MACRO
+	dw $4803
+	dw $4905
+	dw $4A03
+	dw $DF0B
+	dw $4804
+	dw $4905
+	dw $6008
+	dw $4770
+	dd $02029390
+	dd $00000041
+	dd $02025460
+	dd $02025466
+	dd $03000e48
+	ENDM
+TESTMULTICHOICE: MACRO
+	db $F0
+	db $B5
+	db $82
+	db $B0
+	db $00
+	db $06
+	db $07
+	db $0E
+	db $09
+	db $06
+	db $0E
+	db $0E
+	db $12
+	db $06
+	db $14
+	db $0E
+	db $1B
+	db $06
+	db $1D
+	db $0E
+	db $0B
+	db $48
+	db $C5
+	db $F7
+	db $27
+	db $FE
+	db $00
+	db $06
+	db $00
+	db $0E
+	db $01
+	db $28
+	db $16
+	db $D0
+	db $09
+	db $49
+	db $FF
+	db $20
+	db $08
+	db $80
+	db $08
+	db $49
+	db $E0
+	db $00
+	db $40
+	db $18
+	db $02
+	db $79
+	db $03
+	db $68
+	db $00
+	db $95
+	db $00
+	db $20
+	db $01
+	db $90
+	db $38
+	db $1C
+	db $31
+	db $1C
+	db $00
+	db $F0
+	db $52
+	db $F8
+	db $01
+	db $20
+	db $06
+	db $E0
+	db $B5
+	db $52
+	db $0B
+	db $08
+	db $DC
+	db $E8
+	db $02
+	db $02
+	db $00
+	db $DE
+	db $3C
+	db $08
+	db $00
+	db $20
+	db $02
+	db $B0
+	db $F0
+	db $BC
+	db $02
+	db $BC
+	db $08
+	db $47
+	db $00
+	db $00
+	ENDM
+MULTICHOICETABLE: MACRO
+	dd $FFFFFFFF
+	dd $00000003
+	ENDM
+MULTICHOICETABLE2: MACRO
+	dd $FFFFFFFF
+	dd $00000000
+	dd $FFFFFFFF
+	dd $00000000
+	dd $FFFFFFFF
+	dd $00000000
+	ENDM
+SETUPREGISTERS: MACRO
+	db $00
+	dw $2002
+	dw $2102
+	dw $2200
+	dw $2300
+	dw $0000
+	ENDM
+WriteFlashMemory: MACRO
+	db $1E
+	db $20
+	db $01
+	db $49
+	db $01
+	db $4A
+	db $10
+	db $47
+	db $54
+	db $c0
+	db $01
+	db $02
+	db $09
+	db $29
+	db $15
+	db $08
+	ENDM
+ColoRNGPersistent: MACRO
+	db $09
+	db $48
+	db $03
+	db $68
+	db $00
+	db $2b
+	db $01
+	db $d1
+	db $04
+	db $48
+	db $03
+	db $68
+	db $04
+	db $49
+	db $05
+	db $4a
+	db $4b ;muls
+	db $43
+	db $13 ;add
+	db $44
+	db $04
+	db $48
+	db $03
+	db $60
+	db $04
+	db $4b
+	db $18
+	db $47
+	db $80
+	db $5d
+	db $00
+	db $03
+	db $fd
+	db $43
+	db $03
+	db $00
+	db $c3
+	db $9e
+	db $26
+	db $00
+	db $0c
+	db $0e
+	db $00
+	db $03
+	db $39
+	db $07
+	db $00
+	db $08
+	ENDM
+VBLANKINTR_CHECKSAVE: MACRO
+	db $FF
+	db $B4
+	db $FF
+	db $22
+	db $0A
+	db $32
+	db $81
+	db $49
+	db $08
+	db $68
+	db $00
+	db $28
+	db $18
+	db $D0
+	db $01
+	db $30
+	db $90
+	db $42
+	db $01
+	db $D0
+	db $08
+	db $60
+	db $D2
+	db $E0
+	db $00
+	db $20
+	db $08
+	db $60
+	db $9A
+	db $49
+	db $08
+	db $68
+	db $01
+	db $28
+	db $0D
+	db $D1
+	db $00
+	db $20
+	db $08
+	db $60
+	db $1E
+	db $20
+	db $70
+	db $49
+	db $6E
+	db $4B
+	db $00
+	db $F0
+	db $D5
+	db $F8
+	db $6F
+	db $49
+	db $09
+	db $68
+	db $71
+	db $4A
+	db $89
+	db $18
+	db $6F
+	db $48
+	db $70
+	db $4A
+	db $0B
+	db $DF
+	db $7C
+	db $48
+	db $00
+	db $68
+	db $7A
+	db $49
+	db $88
+	db $42
+	db $34
+	db $D1
+	db $70
+	db $48
+	db $01
+	db $21
+	db $01
+	db $60
+	db $8D
+	db $48
+	db $01
+	db $60
+	db $70
+	db $48
+	db $6E
+	db $21
+	db $01
+	db $70
+	db $1E
+	db $20
+	db $63
+	db $49
+	db $62
+	db $4B
+	db $00
+	db $F0
+	db $BC
+	db $F8
+	db $62
+	db $48
+	db $00
+	db $68
+	db $64
+	db $49
+	db $40
+	db $18
+	db $62
+	db $49
+	db $64
+	db $4A
+	db $0B
+	db $DF
+	db $5F
+	db $48
+	db $00
+	db $68
+	db $61
+	db $49
+	db $09
+	db $18
+	db $65
+	db $48
+	db $61
+	db $4A
+	db $0B
+	db $DF
+	db $70
+	db $48
+	db $00
+	db $78
+	db $71
+	db $49
+	db $04
+	db $31
+	db $08
+	db $70
+	db $6F
+	db $48
+	db $00
+	db $78
+	db $04
+	db $31
+	db $08
+	db $70
+	db $7E
+	db $48
+	db $00
+	db $78
+	db $04
+	db $31
+	db $08
+	db $70
+	db $1E
+	db $20
+	db $53
+	db $49
+	db $5D
+	db $4B
+	db $00
+	db $F0
+	db $9C
+	db $F8
+	db $52
+	db $48
+	db $00
+	db $68
+	db $52
+	db $49
+	db $09
+	db $18
+	db $5F
+	db $48
+	db $5E
+	db $4A
+	db $0B
+	db $DF
+	db $84
+	db $E0
+	db $59
+	db $48
+	db $00
+	db $68
+	db $59
+	db $49
+	db $88
+	db $42
+	db $27
+	db $D1
+	db $60
+	db $48
+	db $00
+	db $68
+	db $5D
+	db $49
+	db $88
+	db $42
+	db $10
+	db $D1
+	db $5E
+	db $48
+	db $02
+	db $78
+	db $01
+	db $21
+	db $4A
+	db $40
+	db $02
+	db $70
+	db $60
+	db $4B
+	db $1A
+	db $70
+	db $00
+	db $2A
+	db $00
+	db $D0
+	db $56
+	db $E0
+	db $5E
+	db $4B
+	db $5D
+	db $48
+	db $04
+	db $38
+	db $00
+	db $88
+	db $00
+	db $F0
+	db $7A
+	db $F8
+	db $4F
+	db $E0
+	db $54
+	db $49
+	db $88
+	db $42
+	db $05
+	db $D1
+	db $55
+	db $48
+	db $02
+	db $78
+	db $01
+	db $21
+	db $4A
+	db $40
+	db $02
+	db $70
+	db $42
+	db $E0
+	db $5B
+	db $49
+	db $88
+	db $42
+	db $05
+	db $D1
+	db $62
+	db $48
+	db $02
+	db $78
+	db $01
+	db $21
+	db $4A
+	db $40
+	db $02
+	db $70
+	db $39
+	db $E0
+	db $43
+	db $48
+	db $02
+	db $68
+	db $59
+	db $49
+	db $8A
+	db $42
+	db $41
+	db $D0
+	db $5A
+	db $49
+	db $8A
+	db $42
+	db $39
+	db $D0
+	db $02
+	db $68
+	db $4E
+	db $49
+	db $8A
+	db $42
+	db $4B
+	db $D1
+	db $04
+	db $38
+	db $00
+	db $68
+	db $52
+	db $49
+	db $88
+	db $42
+	db $46
+	db $D0
+	db $27
+	db $24
+	db $43
+	db $48
+	db $00
+	db $68
+	db $4D
+	db $49
+	db $88
+	db $42
+	db $04
+	db $D0
+	db $4C
+	db $49
+	db $88
+	db $42
+	db $00
+	db $D0
+	db $3C
+	db $E0
+	db $1A
+	db $24
+	db $46
+	db $48
+	db $05
+	db $1C
+	db $06
+	db $1C
+	db $0B
+	db $21
+	db $46
+	db $4B
+	db $00
+	db $F0
+	db $44
+	db $F8
+	db $00
+	db $28
+	db $14
+	db $D0
+	db $28
+	db $1C
+	db $42
+	db $49
+	db $88
+	db $42
+	db $10
+	db $D0
+	db $00
+	db $27
+	db $58
+	db $35
+	db $21
+	db $1C
+	db $C9
+	db $19
+	db $3F
+	db $4B
+	db $00
+	db $F0
+	db $37
+	db $F8
+	db $01
+	db $37
+	db $06
+	db $2F
+	db $03
+	db $DC
+	db $28
+	db $80
+	db $02
+	db $35
+	db $30
+	db $1C
+	db $F3
+	db $E7
+	db $2E
+	db $1C
+	db $30
+	db $1C
+	db $E4
+	db $E7
+	db $33
+	db $4B
+	db $01
+	db $20
+	db $00
+	db $F0
+	db $29
+	db $F8
+	db $20
+	db $48
+	db $FF
+	db $21
+	db $01
+	db $60
+	db $15
+	db $E0
+	db $08
+	db $30
+	db $02
+	db $68
+	db $39
+	db $49
+	db $8A
+	db $42
+	db $10
+	db $D1
+	db $00
+	db $27
+	db $30
+	db $4D
+	db $2C
+	db $1C
+	db $56
+	db $34
+	db $26
+	db $88
+	db $36
+	db $4B
+	db $28
+	db $1C
+	db $00
+	db $F0
+	db $17
+	db $F8
+	db $01
+	db $37
+	db $26
+	db $80
+	db $64
+	db $35
+	db $06
+	db $2F
+	db $F3
+	db $D1
+	db $14
+	db $48
+	db $FF
+	db $21
+	db $01
+	db $60
+	db $09
+	db $48
+	db $86
+	db $46
+	db $18
+	db $49
+	db $0F
+	db $20
+	db $08
+	db $70
+	db $14
+	db $48
+	db $00
+	db $68
+	db $14
+	db $49
+	db $88
+	db $42
+	db $02
+	db $D0
+	db $11
+	db $48
+	db $0B
+	db $21
+	db $01
+	db $70
+	db $FF
+	db $BC
+	db $01
+	db $4B
+	db $18
+	db $47
+	db $C0
+	db $46
+	db $39
+	db $07
+	db $00
+	db $08
+	db $7C
+	db $28
+	db $00
+	db $03
+	db $4D
+	db $31
+	db $15
+	db $08
+	db $20
+	db $08
+	db $01
+	db $02
+	db $94
+	db $5D
+	db $00
+	db $03
+	db $F9
+	db $6B
+	db $00
+	db $00
+	db $20
+	db $0D
+	db $01
+	db $02
+	db $E4
+	db $6A
+	db $00
+	db $00
+	db $63
+	db $00
+	db $00
+	db $04
+	db $63
+	db $00
+	db $00
+	db $05
+	db $20
+	db $27
+	db $00
+	db $03
+	db $34
+	db $2C
+	db $02
+	db $02
+	db $0C
+	db $2D
+	db $02
+	db $02
+	db $09
+	db $29
+	db $15
+	db $08
+	db $56
+	db $73
+	db $03
+	db $02
+	db $C4
+	db $22
+	db $00
+	db $03
+	db $5D
+	db $5E
+	db $08
+	db $08
+	db $32
+	db $73
+	db $03
+	db $02
+	db $14
+	db $00
+	db $00
+	db $04
+	db $20
+	db $08
+	db $01
+	db $02
+	db $35
+	db $02
+	db $0A
+	db $08
+	db $1C
+	db $76
+	db $03
+	db $02
+	db $FF
+	db $02
+	db $00
+	db $00
+	db $EF
+	db $02
+	db $00
+	db $00
+	db $30
+	db $01
+	db $00
+	db $04
+	db $F8
+	db $5D
+	db $00
+	db $03
+	db $00
+	db $8C
+	db $03
+	db $02
+	db $80
+	db $0B
+	db $01
+	db $02
+	db $A5
+	db $37
+	db $0A
+	db $08
+	db $4C
+	db $0F
+	db $00
+	db $03
+	db $79
+	db $37
+	db $0A
+	db $08
+	db $B1
+	db $01
+	db $1B
+	db $08
+	db $EC
+	db $44
+	db $02
+	db $02
+	db $44
+	db $47
+	db $02
+	db $02
+	db $19
+	db $A5
+	db $06
+	db $08
+	db $FB
+	db $02
+	db $00
+	db $00
+	db $F3
+	db $03
+	db $00
+	db $00
+	db $F1
+	db $9E
+	db $03
+	db $08
+	db $95
+	db $38
+	db $1B
+	db $08
+	db $CD
+	db $01
+	db $1B
+	db $08
+	db $0D
+	db $8D
+	db $06
+	db $08
+	db $95
+	db $61
+	db $08
+	db $08
+	db $0C
+	db $0E
+	db $00
+	db $03
+	db $84
+	db $42
+	db $02
+	db $02
+	ENDM
+GLITCHMOVECALLBACK: MACRO
+	db $FF
+	db $B4
+	db $0A
+	db $49
+	db $C9
+	db $68
+	db $00
+	db $29
+	db $0B
+	db $21
+	db $00
+	db $D5
+	db $63
+	db $31
+	db $08
+	db $4A
+	db $11
+	db $70
+	db $1E
+	db $20
+	db $08
+	db $49
+	db $09
+	db $4B
+	db $00
+	db $F0
+	db $07
+	db $F8
+	db $08
+	db $4B
+	db $00
+	db $F0
+	db $04
+	db $F8
+	db $FF
+	db $BC
+	db $07
+	db $48
+	db $86
+	db $46
+	db $02
+	db $4B
+	db $18
+	db $47
+	db $C0
+	db $22
+	db $00
+	db $03
+	db $56
+	db $73
+	db $03
+	db $02
+	db $E9
+	db $61
+	db $08
+	db $08
+	db $BC
+	db $AB
+	db $03
+	db $02
+	db $4D
+	db $31
+	db $15
+	db $08
+	db $05
+	db $AC
+	db $03
+	db $02
+	db $E7
+	db $69
+	db $00
+	db $08
+	ENDM
+SEEDRNGANDFIXSAVE: MACRO
+	db $00
+	db $B5
+	db $1C
+	db $48
+	db $01
+	db $21
+	db $01
+	db $60
+	db $1E
+	db $48
+	db $01
+	db $60
+	db $13
+	db $4B
+	db $0C
+	db $22
+	db $D2
+	db $18
+	db $10
+	db $78
+	db $01
+	db $28
+	db $04
+	db $D0
+	db $18
+	db $88
+	db $01
+	db $30
+	db $10
+	db $49
+	db $08
+	db $60
+	db $18
+	db $60
+	db $04
+	db $33
+	db $18
+	db $68
+	db $14
+	db $49
+	db $08
+	db $70
+	db $15
+	db $49
+	db $08
+	db $70
+	db $04
+	db $33
+	db $18
+	db $68
+	db $12
+	db $49
+	db $08
+	db $70
+	db $1E
+	db $20
+	db $0A
+	db $49
+	db $0D
+	db $4B
+	db $00
+	db $F0
+	db $08
+	db $F8
+	db $09
+	db $48
+	db $05
+	db $49
+	db $09
+	db $4A
+	db $0B
+	db $DF
+	db $02
+	db $48
+	db $03
+	db $49
+	db $01
+	db $60
+	db $00
+	db $BD
+	db $18
+	db $47
+	db $C0
+	db $46
+	db $20
+	db $27
+	db $00
+	db $03
+	db $01
+	db $B2
+	db $01
+	db $02
+	db $1C
+	db $AF
+	db $03
+	db $02
+	db $80
+	db $5D
+	db $00
+	db $03
+	db $BC
+	db $AB
+	db $03
+	db $02
+	db $8C
+	db $AC
+	db $03
+	db $02
+	db $A8
+	db $00
+	db $00
+	db $04
+	db $09
+	db $29
+	db $15
+	db $08
+	db $34
+	db $2C
+	db $02
+	db $02
+	db $F8
+	db $5D
+	db $00
+	db $03
+	db $00
+	db $8C
+	db $03
+	db $02
+	db $4C
+	db $0F
+	db $00
+	db $03
+	db $0C
+	db $0E
+	db $00
+	db $03
+	ENDM
